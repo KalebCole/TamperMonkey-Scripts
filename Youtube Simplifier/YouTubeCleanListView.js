@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         YouTube Clean List View
 // @namespace    https://github.com/kalebcole
-// @version      2.3.0
-// @description  YouTube home page as a clean list: titles + creator info only, no thumbnails, no Shorts
+// @version      2.4.0
+// @description  YouTube clean list view: titles + creator info only, no thumbnails, no Shorts (Home & Watch page sidebar)
 // @match        https://www.youtube.com/*
 // @grant        none
 // ==/UserScript==
@@ -198,6 +198,129 @@
       ytd-rich-item-renderer #dismissible {
         padding: 0 !important;
       }
+
+      /* ===== WATCH PAGE SIDEBAR (RECOMMENDED VIDEOS) ===== */
+      /* New YouTube structure uses yt-lockup-view-model instead of ytd-compact-video-renderer */
+
+      /* Hide thumbnails in sidebar */
+      #secondary yt-lockup-view-model .yt-lockup-view-model__content-image,
+      #secondary yt-lockup-view-model yt-thumbnail-view-model {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        max-height: 0 !important;
+        max-width: 0 !important;
+        overflow: hidden !important;
+      }
+
+      /* Restructure sidebar items to show avatar + info */
+      #secondary yt-lockup-view-model {
+        display: block !important;
+        margin: 0 0 12px !important;
+        padding: 8px 0 !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+      }
+
+      html[dark] #secondary yt-lockup-view-model {
+        border-bottom-color: #3f3f3f !important;
+      }
+
+      /* Layout for sidebar items - horizontal flex with avatar and text */
+      #secondary yt-lockup-view-model .yt-lockup-view-model__metadata {
+        display: flex !important;
+        width: 100% !important;
+      }
+
+      #secondary yt-lockup-view-model yt-lockup-metadata-view-model {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+        width: 100% !important;
+      }
+
+      /* Show and style the avatar in sidebar */
+      #secondary yt-lockup-view-model .yt-lockup-metadata-view-model__avatar {
+        display: block !important;
+        flex-shrink: 0 !important;
+        order: -1 !important;
+      }
+
+      #secondary yt-lockup-view-model .yt-lockup-metadata-view-model__avatar yt-avatar-shape {
+        display: block !important;
+      }
+
+      #secondary yt-lockup-view-model .yt-lockup-metadata-view-model__avatar img {
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 50% !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      /* Content area in sidebar */
+      #secondary yt-lockup-view-model .yt-lockup-metadata-view-model__text-container {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 4px !important;
+        flex: 1 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      /* Video title in sidebar */
+      #secondary yt-lockup-view-model .yt-lockup-metadata-view-model__title {
+        display: block !important;
+        font-size: 14px !important;
+        line-height: 1.4 !important;
+        font-weight: 500 !important;
+        color: var(--yt-spec-text-primary) !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      #secondary yt-lockup-view-model .yt-lockup-metadata-view-model__title span {
+        display: inline !important;
+      }
+
+      /* Channel name in sidebar - keep first metadata row (channel name) */
+      #secondary yt-lockup-view-model .yt-content-metadata-view-model__metadata-row:first-child {
+        display: block !important;
+        font-size: 12px !important;
+        color: var(--yt-spec-text-secondary) !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      #secondary yt-lockup-view-model .yt-content-metadata-view-model__metadata-row:first-child span {
+        font-size: 12px !important;
+        color: var(--yt-spec-text-secondary) !important;
+      }
+
+      /* Hide other metadata in sidebar (views, time, badges) */
+      #secondary yt-lockup-view-model .yt-content-metadata-view-model__metadata-row:not(:first-child) {
+        display: none !important;
+      }
+
+      /* Hide menu button in sidebar until hover */
+      #secondary yt-lockup-view-model .yt-lockup-metadata-view-model__menu-button {
+        opacity: 0.3 !important;
+        transition: opacity 0.2s !important;
+      }
+
+      #secondary yt-lockup-view-model:hover .yt-lockup-metadata-view-model__menu-button {
+        opacity: 1 !important;
+      }
+
+      /* Remove Shorts from sidebar */
+      #secondary yt-lockup-view-model:has(ytm-shorts-lockup-view-model),
+      #secondary yt-lockup-view-model:has(ytm-shorts-lockup-view-model-v2),
+      #secondary ytd-reel-item-renderer {
+        display: none !important;
+      }
     `;
 
     // Inject CSS
@@ -246,6 +369,31 @@
       document.querySelectorAll('yt-thumbnail-view-model, .shortsLockupViewModelHost').forEach(el => {
         el.style.display = 'none';
       });
+
+      // === SIDEBAR CLEANUP ===
+      // Remove Shorts from sidebar (new yt-lockup-view-model structure)
+      document.querySelectorAll('#secondary yt-lockup-view-model, #secondary ytd-reel-item-renderer').forEach(item => {
+        if (item.querySelector('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2') ||
+            item.matches('ytd-reel-item-renderer')) {
+          item.remove();
+        }
+      });
+
+      // Hide thumbnails in sidebar videos (new structure)
+      const sidebarSelectors = [
+        '#secondary yt-lockup-view-model .yt-lockup-view-model__content-image',
+        '#secondary yt-lockup-view-model yt-thumbnail-view-model'
+      ];
+
+      sidebarSelectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => {
+          el.style.display = 'none';
+          el.style.visibility = 'hidden';
+          el.style.opacity = '0';
+          el.style.height = '0';
+          el.style.width = '0';
+        });
+      });
     };
 
     // MutationObserver to handle dynamically loaded content
@@ -282,6 +430,18 @@
             if (node.matches('ytd-rich-grid-media') && !node.closest('ytd-rich-item-renderer')?.querySelector('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2')) {
               node.remove();
             }
+
+            // === SIDEBAR HANDLING ===
+            // Remove Shorts from sidebar (new yt-lockup-view-model structure)
+            if (node.matches('yt-lockup-view-model, ytd-reel-item-renderer')) {
+              if (node.querySelector('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2') ||
+                  node.matches('ytd-reel-item-renderer')) {
+                node.remove();
+                continue;
+              }
+              // For regular sidebar videos, remove thumbnails
+              setTimeout(nukeUnwantedContent, 50);
+            }
           }
         }
       }
@@ -289,10 +449,18 @@
 
     // Start observing once the page loads
     const startObserver = () => {
+      // Observe home page content
       const contents = document.querySelector('#contents, #primary #contents, ytd-rich-grid-renderer');
       if (contents) {
         observer.observe(contents, { childList: true, subtree: true });
       }
+
+      // Observe watch page sidebar
+      const sidebar = document.querySelector('#secondary, #related');
+      if (sidebar) {
+        observer.observe(sidebar, { childList: true, subtree: true });
+      }
+
       // Run cleanup immediately
       nukeUnwantedContent();
     };
